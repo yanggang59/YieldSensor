@@ -79,13 +79,14 @@ static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
         //Performs some image processing operations
 
       	cout<<g_count<<" Frame captured"<<endl;
-        //将相机拍摄的照片从内存中拷贝到Mat的data指针，这样才可以调用OpenCV来处理
+
+        //将相机拍摄的照片从内存中拷贝到Mat的data指针，这样才可以调用OpenCV来处理,关键处理
       	memcpy(thisFrame.data,pFrame->pImgBuf,pFrame->nImgSize);
 
       	/*put OpenCV image processing code here,consider using multi-thread next time*/
 
 
-      	//存储原始的照片
+      	//存储原始的照片,实际开发的时候注释
       	if(g_count<1000)
         {
          imwrite("before_test_"+to_string(g_count)+".jpg",thisFrame);
