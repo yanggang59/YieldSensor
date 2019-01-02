@@ -1,17 +1,16 @@
-/*　１．大恒相机硬出发采集图像
+/*　１．大恒相机硬触发采集图像
 *　 ２．通过OpenCV处理图像
 *  ３．动态计算升运器的速度
 *  ４.串口发送流量传感器数据
 */
 
 
-#include"GxIAPI.h"
+#include "GxIAPI.h"
 #include <iostream>
-#include<fstream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <sys/time.h>
-
 
 //使用串口发送产量数据
 #include "serialSend/serialSend.h"
@@ -49,16 +48,21 @@ unsigned char send_buf[3]={0,0,255};
 float grain_thickness=0.0,real_length=0.0;
 
 //累积的谷物体积
-float volumeAcc=0.0;
+double volumeAcc=0.0;
 
-//刮板的截面面积,单位是　mm2;
+/**
+*刮板的截面面积,单位是　mm2,计算方法是刮板实际面积减去链条的孔洞面积;
+*刮板的长宽分别为:
+*链条孔长宽分别为:
+*/
+
 float CSA=14000.0;
 
 // 谷物的容重，单位是　g/L
 float volume_weight=502;
 
 
-//谷物的产量，单位是kg
+//谷物的产量，单位是　kg
 double yield=0.0;
 
 //Image processing callback function.
@@ -68,7 +72,7 @@ static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
 
   	  use_microconds=1000000*(tend.tv_sec - tstart.tv_sec) + (tend.tv_usec - tstart.tv_usec);
 
-  	  cout <<"used microseconds is "<<use_microconds<<endl;
+  	  cout << "used microseconds is  "<< use_microconds << "us" << endl;
 
   	  tstart.tv_sec=tend.tv_sec ;
 
@@ -78,72 +82,29 @@ static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
       {
         //Performs some image processing operations
 
-      	cout<<g_count<<" Frame captured"<<endl;
+      	cout << g_count << " Frame captured" << endl;
 
-        //将相机拍摄的照片从内存中拷贝到Mat的data指针，这样才可以调用OpenCV来处理,关键处理
+        //将相机拍摄的照片从内存中拷贝到Mat的data指针，这样才可以调用OpenCV来处理,关键处理代码
       	memcpy(thisFrame.data,pFrame->pImgBuf,pFrame->nImgSize);
 
       	/*put OpenCV image processing code here,consider using multi-thread next time*/
+      	//存储原始的照片,实际开发的时候注释掉此段
+      	// if(g_count<1000)
+        // {
+        //   imwrite("before_test_"+to_string(g_count)+".jpg",thisFrame);
+        //   g_count++;
+        // }
 
 
-      	//存储原始的照片,实际开发的时候注释
-      	if(g_count<1000)
-        {
-         imwrite("before_test_"+to_string(g_count)+".jpg",thisFrame);
-         g_count++;
-        }
-
-/*
       	bitwise_and(thisFrame, mask, thisFrame);
-      	Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
-      	dilate(thisFrame, thisFrame, element);
-      	vector<vector<Point>> contours;
-      	vector<Vec4i> hierarchy;
-      	findContours(thisFrame, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point());
+        threshold(thisFrame, thisFrame, 100, 255, CV_THRESH_BINARY);
 
-      	float maxLength = 0.0;
-
-
-
-        if (contours.size() > 0)
-      	{
-      		for (int j = 0; j < contours.size(); j++)
-      		{
-      			RotatedRect rect = minAreaRect(contours[j]);
-      			if (rect.size.width > maxLength)
-      				maxLength = rect.size.width;
-      		}
-
-      		for (int k = 0; k < contours.size(); k++)
-      		{
-      			RotatedRect rect = minAreaRect(contours[k]);
-      			if (rect.size.height > maxLength)
-      			    maxLength = rect.size.height;
-      		}
-      	}
-
-      	real_length = maxLength/17.0;
-
-
-    		cout << "height is " << maxLength << endl;
-    		cout << "real length is " << maxLength /17<<endl;
-
-
-      	if (real_length > 10.0)
-      	{
-      		grain_thickness=real_length-10.0;
-      		volumeAcc+=grain_thickness*CSA;
-      		yield=volumeAcc*volume_weight;
 
       		//Need To Transform g to Kg and mm3 to L,thats why divided by 1,000,000,000,
       		send_buf[0]=((int)(yield/1000000000))%256;
       		send_buf[1]=((int)(yield/1000000000))/256;
 
-          ofstream fout("result.txt");
 
-      		fout<<"Yiled is "<<(int)(yield/1000000000)<<" Kg"<<endl;
-      	}
-        */
     }
 
       return;
@@ -164,14 +125,16 @@ int main(int argc, char* argv[])
    tstart.tv_sec = 0;
    tstart.tv_usec = 0;
 
-   /* 打开串口，返回文件描述符，在此之前必须先给串口写权限，否则会报错  */
+   /* 打开串口，返回文件描述符，在此之前必须先给串口写权限，或者直接将用户加入diaout用户组，否则会报错  */
    fd = open( "/dev/ttyUSB0", O_RDWR|O_NOCTTY|O_NDELAY);
 
    g_count=0;
 
-   //mask = imread("MASK.jpg",0);
-
-   //threshold(mask, mask, 80, 255, CV_THRESH_BINARY);
+   /**读取背景图片，下面用来去除背景
+   *
+   */
+   mask = imread("MASK.jpg",0);
+   threshold(mask, mask, 80, 255, CV_THRESH_BINARY);
 
    GX_STATUS status = GX_STATUS_SUCCESS;
 
@@ -197,12 +160,6 @@ int main(int argc, char* argv[])
        return 0;
    }
 
-   // 独占方式打开设备
-   //stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
-
-   //只读方式打开设备
-   //stOpenParam.accessMode = GX_ACCESS_READONLY;
-
    //控制方式打开设备
    stOpenParam.accessMode = GX_ACCESS_CONTROL;
 
@@ -217,8 +174,8 @@ int main(int argc, char* argv[])
 
     if (status == GX_STATUS_SUCCESS)
     {
-	//触发模式置为On
-         status =GXSetEnum(hDevice,GX_ENUM_TRIGGER_MODE, GX_TRIGGER_MODE_ON);
+	      //触发模式置为On
+        status =GXSetEnum(hDevice,GX_ENUM_TRIGGER_MODE, GX_TRIGGER_MODE_ON);
 
 
         //选择触发源为Line0
@@ -228,25 +185,22 @@ int main(int argc, char* argv[])
 	      //设置引脚方向为输入
         status = GXSetEnum(hDevice, GX_ENUM_LINE_MODE, GX_ENUM_LINE_MODE_INPUT);
 
-	       //选择Line0作为触发
-	       //status = GXSetEnum(hDevice, GX_ENUM_LINE_SELECTOR, GX_ENUM_LINE_SELECTOR_LINE0);
-
-	       //设置曝光模式
-	       status = GXSetEnum(hDevice, GX_ENUM_EXPOSURE_MODE,GX_EXPOSURE_MODE_TIMED);
+	      //设置曝光模式
+	      status = GXSetEnum(hDevice, GX_ENUM_EXPOSURE_MODE,GX_EXPOSURE_MODE_TIMED);
 
 
-         //设置曝光时间
-	       status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 3000);
+        //设置曝光时间
+	      status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 2000);
 
-         //设置触发极性为下降沿触发
-         status=GXSetEnum(hDevice,GX_ENUM_TRIGGER_ACTIVATION,GX_TRIGGER_ACTIVATION_FALLINGEDGE);
+        //设置触发极性为下降沿触发
+        status=GXSetEnum(hDevice,GX_ENUM_TRIGGER_ACTIVATION,GX_TRIGGER_ACTIVATION_FALLINGEDGE);
 	       //status=GXSetEnum(hDevice,GX_ENUM_TRIGGER_ACTIVATION,GX_TRIGGER_ACTIVATION_RISINGEDGE);
 
-         //注册图像处理回调函数
-         status = GXRegisterCaptureCallback(hDevice, NULL, OnFrameCallbackFun);
+        //注册图像处理回调函数
+        status = GXRegisterCaptureCallback(hDevice, NULL, OnFrameCallbackFun);
 
-         //发送图像获取命令
-         status = GXSendCommand(hDevice, GX_COMMAND_ACQUISITION_START);
+        //发送图像获取命令
+        status = GXSendCommand(hDevice, GX_COMMAND_ACQUISITION_START);
 
        //---------------------
        //
@@ -256,10 +210,14 @@ int main(int argc, char* argv[])
     	while(true)
     	{
     	   //Here.volume sensor message is sent using serial port
-    	   for(int k=0;k<1000000;k++)
-    	   {
-    		     k++;
-    	   }
+    	   // for(int k=0;k<1000000;k++)
+    	   // {
+    		 //     k++;
+    	   // }
+
+         //send message every 1 second
+         sleep(10);
+
     	//   cout<<"Yiled is"<<yield<<"Kg"<<endl;
     	//   serial_send(fd,&options,send_buf,3);
     	}
