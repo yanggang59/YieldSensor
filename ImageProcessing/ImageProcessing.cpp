@@ -1,15 +1,15 @@
 #include "ImageProcessing.h"
 
 /**
-*¹«Ê½£º
+*å…¬å¼ï¼š
 *     Zc = 32*fx/(u-cx)
 *     Xc = (u-cx)*Zc/fx
 *     Yc = (v-cy)*Zc/fy = 32*fx*(v-cy)/(fy*(u-cx))
-*     Ëã³öy×ø±êÖ®²î ¾ÍÊÇ¹ÈÎïºñ¶ÈºÍ¹Î°åºñ¶ÈÖ®ºÍ¡£
+*     ç®—å‡ºyåæ ‡ä¹‹å·® å°±æ˜¯è°·ç‰©åšåº¦å’Œåˆ®æ¿åšåº¦ä¹‹å’Œã€‚
 */
 
 
-/**·Ö¿é´¦ÀíÍ¼Æ¬
+/**åˆ†å—å¤„ç†å›¾ç‰‡
 */
 void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, float& sum_weight)
 {
@@ -23,28 +23,28 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 	threshold(thisFrame, thisFrame, 160, 255, CV_THRESH_BINARY);
 
 
-	/**½«ÉÏÃæ·Ö³ÉÈı¸ö¾ØĞÎÇøÓò
+	/**å°†ä¸Šé¢åˆ†æˆä¸‰ä¸ªçŸ©å½¢åŒºåŸŸ
 	* A:(77,964)(229,1022)
 	* B:(229,964)(323,1053)
 	* C:(323,964)(568,1112)
 	*/
-	bool inAreaA = false; //AÇøÓòÊÇ·ñ°üº¬µã
-	bool inAreaB = false; //BÇøÓòÊÇ·ñ°üº¬µã
-	bool inAreaC = false; //CÇøÓòÊÇ·ñ°üº¬µã
+	bool inAreaA = false; //AåŒºåŸŸæ˜¯å¦åŒ…å«ç‚¹
+	bool inAreaB = false; //BåŒºåŸŸæ˜¯å¦åŒ…å«ç‚¹
+	bool inAreaC = false; //CåŒºåŸŸæ˜¯å¦åŒ…å«ç‚¹
 
-	Point peak;  //¼ÇÂ¼¶¥µãĞÅÏ¢
-	Point3f real_peak; //¹È¶Ñ×î¸ßµãÈıÎ¬×ø±ê£¨Ïà»ú×ø±êÏµ£©
+	Point peak;  //è®°å½•é¡¶ç‚¹ä¿¡æ¯
+	Point3f real_peak; //è°·å †æœ€é«˜ç‚¹ä¸‰ç»´åæ ‡ï¼ˆç›¸æœºåæ ‡ç³»ï¼‰
 
-	Point bottom;//¹Î°å×îµÍµã
-	Point3f real_bottom; //¹Î°å×îµÍµãÈıÎ¬×ø±ê£¨Ïà»ú×ø±êÏµ£©
+	Point bottom;//åˆ®æ¿æœ€ä½ç‚¹
+	Point3f real_bottom; //åˆ®æ¿æœ€ä½ç‚¹ä¸‰ç»´åæ ‡ï¼ˆç›¸æœºåæ ‡ç³»ï¼‰
 
-	bool isVoid = false;//ÊÇ·ñÊÇ¿ÕµÄ¹Î°å£»
-	/*²é¿´AÇøÓòÊÇ·ñÓĞµã
+	bool isVoid = false;//æ˜¯å¦æ˜¯ç©ºçš„åˆ®æ¿ï¼›
+	/*æŸ¥çœ‹AåŒºåŸŸæ˜¯å¦æœ‰ç‚¹
 	*/
-	for (int i = 77; i < 229; i++) //i´ú±íĞĞ£¬Ò²¾ÍÊÇV
+	for (int i = 77; i < 229; i++) //iä»£è¡¨è¡Œï¼Œä¹Ÿå°±æ˜¯V
 	{
 		if (inAreaA) break;
-		for (int j = 964; j < 1022; j++)//j´ú±íÁĞ£¬Ò²¾ÍÊÇU
+		for (int j = 964; j < 1022; j++)//jä»£è¡¨åˆ—ï¼Œä¹Ÿå°±æ˜¯U
 		{
 			if (thisFrame.at<uchar>(i, j)>0)
 			{
@@ -58,7 +58,7 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 		}
 	}
 
-	/*Èç¹û²»ÔÚAÇøÓò£¬²é¿´ÊÇ·ñÔÚBÇøÓò
+	/*å¦‚æœä¸åœ¨AåŒºåŸŸï¼ŒæŸ¥çœ‹æ˜¯å¦åœ¨BåŒºåŸŸ
 	*/
 	if (!inAreaA)
 	{
@@ -80,7 +80,7 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 		}
 	}
 
-	/*Èç¹û²»ÔÚAÇøÓòºÍBÇøÓò£¬²é¿´ÊÇ·ñÔÚCÇøÓò
+	/*å¦‚æœä¸åœ¨AåŒºåŸŸå’ŒBåŒºåŸŸï¼ŒæŸ¥çœ‹æ˜¯å¦åœ¨CåŒºåŸŸ
 	*/
 	if (!inAreaA && !inAreaB)
 	{
@@ -103,7 +103,7 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 	}
 
 
-	/*Èç¹ûABCÈı¸öÇøÓò¶¼Ã»ÓĞµã£¬ËµÃ÷¹Î°åÉÏÎŞ¹ÈÎï
+	/*å¦‚æœABCä¸‰ä¸ªåŒºåŸŸéƒ½æ²¡æœ‰ç‚¹ï¼Œè¯´æ˜åˆ®æ¿ä¸Šæ— è°·ç‰©
 	*/
 	if (!inAreaA && !inAreaB && !inAreaC)
 	{
@@ -118,7 +118,7 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 		real_peak.y = 32 * fx*(peak.y - cy) / (fy*(peak.x - cx));
 	}
 
-	//Èç¹û¹Î°å²»Îª¿Õ,ÕÒµ½¹Î°å×îµÍµã
+	//å¦‚æœåˆ®æ¿ä¸ä¸ºç©º,æ‰¾åˆ°åˆ®æ¿æœ€ä½ç‚¹
 	bool findBottom = false;
 	if (!isVoid)
 	{
@@ -139,18 +139,18 @@ void ImageProcessing(Mat& thisFrame, Mat& mask, float volume_weight, float CSA, 
 			}
 		}
 	}
-	//Ö»ÓĞµ±¹Î°å²»Îª¿ÕÇÒÔúµ½¹Î°å×îµÍµã²Å¼ÆËã¹È¶Ñ¸ß¶È
+	//åªæœ‰å½“åˆ®æ¿ä¸ä¸ºç©ºä¸”æ‰åˆ°åˆ®æ¿æœ€ä½ç‚¹æ‰è®¡ç®—è°·å †é«˜åº¦
 	if (!isVoid && findBottom)
 	{
 		real_bottom.z = 32 * fx / (bottom.x - cx);
 		//real_bottom.x = (bottom.x - cx)*real_bottom.z / fx;
 		real_bottom.y = 32 * fx*(bottom.y - cy) / (fy*(bottom.x - cx));
-		//×¢ÒâyÖáÊÇÏòÏÂµÄ£¬ËùÒÔĞèÒª¼ÓÒ»¸ö¸ººÅ,µ¥Î»ÊÇmm
+		//æ³¨æ„yè½´æ˜¯å‘ä¸‹çš„ï¼Œæ‰€ä»¥éœ€è¦åŠ ä¸€ä¸ªè´Ÿå·,å•ä½æ˜¯mm
 		float distance = -(real_peak.y - real_bottom.y);
 		if (distance > 10) distance -= 10.0;
 		else distance = 0.0;
+		//æ­¤æ¬¡ç…§ç‰‡ä¸­åˆ®æ¿ä¸Šçš„è°·ç‰©é‡é‡
 		float this_weight = CSA * distance / 10 * volume_weight;
 		sum_weight += this_weight;
-		cout << "weight is " << (int)(sum_weight / 1000) << "  kg" << endl;
 	}
 }

@@ -10,21 +10,12 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-//使用串口发送产量数据
+//串口发送模块
 #include "serialSend/serialSend.h"
 
+//图像处理模块
+#include "ImageProcessing/ImageProcessing.h"
 
-//使用OpenCV进行图像处理
-#include <opencv2/opencv.hpp>
-
-
-using namespace std;
-using namespace cv;
-
-float fx = 1761.6;
-float fy = 1774.03;
-float cx = 699.36;
-float cy = 505.98;
 
 //小麦的容重是780g/L = 0.78g/cm3 
 float volume_weight = 0.78;
@@ -86,12 +77,9 @@ static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
           g_count++;
         }
 
-
-
-      		//Need To Transform g to Kg and mm3 to L,thats why divided by 1,000,000,000,
-      		//send_buf[0]=((int)(yield/1000000000))%256;
-      		//send_buf[1]=((int)(yield/1000000000))/256;
-
+        ImageProcessing(thisFrame,mask,volume_weight,CSA,sum_weight);
+        
+        cout << "weight is " << (int)(sum_weight / 1000) << "  kg" << endl;
 
     }
 
@@ -122,6 +110,7 @@ int main(int argc, char* argv[])
    *
    */
    mask = imread("MASK.jpg",0);
+
    threshold(mask, mask, 80, 255, CV_THRESH_BINARY);
 
    GX_STATUS status = GX_STATUS_SUCCESS;
@@ -197,11 +186,6 @@ int main(int argc, char* argv[])
        //---------------------
     	while(true)
     	{
-    	   //Here.volume sensor message is sent using serial port
-    	   // for(int k=0;k<1000000;k++)
-    	   // {
-    		 //     k++;
-    	   // }
 
          //send message every 1 second
          //sleep(10);
@@ -216,6 +200,7 @@ int main(int argc, char* argv[])
        //Unregisters image processing callback function.
        status = GXUnregisterCaptureCallback(hDevice);
     }
+
     status = GXCloseDevice(hDevice);
     status = GXCloseLib();
     return 0;
