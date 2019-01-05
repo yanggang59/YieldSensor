@@ -3,8 +3,6 @@
 *  ３．动态计算升运器的速度
 *  ４.串口发送流量传感器数据
 */
-
-
 #include "GxIAPI.h"
 #include <iostream>
 #include <fstream>
@@ -22,6 +20,20 @@
 
 using namespace std;
 using namespace cv;
+
+float fx = 1761.6;
+float fy = 1774.03;
+float cx = 699.36;
+float cy = 505.98;
+
+//小麦的容重是780g/L = 0.78g/cm3 
+float volume_weight = 0.78;
+
+//刮板的截面积是140cm2
+float CSA = 140.0;
+
+//谷物总的重量
+float sum_weight=0.0;
 
 
 Mat thisFrame(1024,1280,CV_8UC1);   //OpenCV Mat
@@ -43,27 +55,6 @@ long int use_microconds;
 //串口发送的消息
 unsigned char send_buf[3]={0,0,255};
 
-
-//谷物厚度
-float grain_thickness=0.0,real_length=0.0;
-
-//累积的谷物体积
-double volumeAcc=0.0;
-
-/**
-*刮板的截面面积,单位是　mm2,计算方法是刮板实际面积减去链条的孔洞面积;
-*刮板的长宽分别为:
-*链条孔长宽分别为:
-*/
-
-float CSA=14000.0;
-
-// 谷物的容重，单位是　g/L
-float volume_weight=502;
-
-
-//谷物的产量，单位是　kg
-double yield=0.0;
 
 //Image processing callback function.
 static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
@@ -89,20 +80,17 @@ static void GX_STDC OnFrameCallbackFun(GX_FRAME_CALLBACK_PARAM* pFrame)
 
       	/*put OpenCV image processing code here,consider using multi-thread next time*/
       	//存储原始的照片,实际开发的时候注释掉此段
-      	// if(g_count<1000)
-        // {
-        //   imwrite("before_test_"+to_string(g_count)+".jpg",thisFrame);
-        //   g_count++;
-        // }
+      	if(g_count<1000)
+        {
+          imwrite("before_test_"+to_string(g_count)+".jpg",thisFrame);
+          g_count++;
+        }
 
-
-      	bitwise_and(thisFrame, mask, thisFrame);
-        threshold(thisFrame, thisFrame, 100, 255, CV_THRESH_BINARY);
 
 
       		//Need To Transform g to Kg and mm3 to L,thats why divided by 1,000,000,000,
-      		send_buf[0]=((int)(yield/1000000000))%256;
-      		send_buf[1]=((int)(yield/1000000000))/256;
+      		//send_buf[0]=((int)(yield/1000000000))%256;
+      		//send_buf[1]=((int)(yield/1000000000))/256;
 
 
     }
@@ -216,7 +204,7 @@ int main(int argc, char* argv[])
     	   // }
 
          //send message every 1 second
-         sleep(10);
+         //sleep(10);
 
     	//   cout<<"Yiled is"<<yield<<"Kg"<<endl;
     	//   serial_send(fd,&options,send_buf,3);
